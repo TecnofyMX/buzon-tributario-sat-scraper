@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tecnofy\BuzonTributarioSatScraper;
 
-final readonly class Notification
+final class Notification
 {
     public function __construct(
         public string $folio,

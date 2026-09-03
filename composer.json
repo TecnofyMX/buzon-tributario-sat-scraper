@@ -10,10 +10,10 @@
             "email": "rafael@tecnofy.org"
         }
     ],
-    "homepage": "https://github.com/tecnofy/buzon-tributario-sat-scraper",
+    "homepage": "https://github.com/TecnofyMX/buzon-tributario-sat-scraper",
     "support": {
-        "issues": "https://github.com/tecnofy/buzon-tributario-sat-scraper/issues",
-        "source": "https://github.com/tecnofy/buzon-tributario-sat-scraper"
+        "issues": "https://github.com/TecnofyMX/buzon-tributario-sat-scraper/issues",
+        "source": "https://github.com/TecnofyMX/buzon-tributario-sat-scraper"
     },
     "require": {
         "php": ">=8.4",

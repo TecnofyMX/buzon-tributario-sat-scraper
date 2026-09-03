@@ -11,7 +11,7 @@ use Tecnofy\BuzonTributarioSatScraper\Internal\FormParser;
 use Tecnofy\BuzonTributarioSatScraper\Internal\HttpRequester;
 use Tecnofy\BuzonTributarioSatScraper\Internal\Page;
 
-final readonly class SsoHandler
+final class SsoHandler
 {
     private const MAX_STEPS = 12;
 

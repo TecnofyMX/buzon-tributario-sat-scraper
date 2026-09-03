@@ -11,7 +11,7 @@ use Tecnofy\BuzonTributarioSatScraper\Internal\HttpRequester;
 use Tecnofy\BuzonTributarioSatScraper\Internal\Page;
 use Tecnofy\BuzonTributarioSatScraper\Url;
 
-final readonly class CommunicationService
+final class CommunicationService
 {
     public function __construct(
         private HttpRequester $requester,

@@ -10,7 +10,7 @@ use IteratorAggregate;
 use Traversable;
 
 /** @implements IteratorAggregate<int, Notification> */
-final readonly class NotificationCollection implements Countable, IteratorAggregate
+final class NotificationCollection implements Countable, IteratorAggregate
 {
     /** @var list<Notification> */
     private array $items;

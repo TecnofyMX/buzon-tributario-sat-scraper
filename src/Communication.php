@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tecnofy\BuzonTributarioSatScraper;
 
-final readonly class Communication
+final class Communication
 {
     public function __construct(
         public string $receivedAt,

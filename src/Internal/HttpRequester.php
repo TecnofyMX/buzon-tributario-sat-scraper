@@ -9,7 +9,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
 use Tecnofy\BuzonTributarioSatScraper\Exceptions\NetworkException;
 
-final readonly class HttpRequester
+final class HttpRequester
 {
     public function __construct(private ClientInterface $client)
     {

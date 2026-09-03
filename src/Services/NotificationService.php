@@ -14,7 +14,7 @@ use Tecnofy\BuzonTributarioSatScraper\Notification;
 use Tecnofy\BuzonTributarioSatScraper\NotificationCollection;
 use Tecnofy\BuzonTributarioSatScraper\NotificationStatus;
 
-final readonly class NotificationService
+final class NotificationService
 {
     private const MAX_PAGES = 100;
 

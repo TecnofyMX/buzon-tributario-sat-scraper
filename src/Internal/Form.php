@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tecnofy\BuzonTributarioSatScraper\Internal;
 
-final readonly class Form
+final class Form
 {
     /** @param array<string, string> $fields */
     public function __construct(

@@ -6,7 +6,7 @@ namespace Tecnofy\BuzonTributarioSatScraper\Internal;
 
 use Tecnofy\BuzonTributarioSatScraper\NotificationStatus;
 
-final readonly class NavigationRequest
+final class NavigationRequest
 {
     /** @param array<string, string> $fields */
     public function __construct(
