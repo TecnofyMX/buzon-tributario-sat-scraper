@@ -1,0 +1,76 @@
+{
+    "name": "tecnofy/buzon-tributario-sat-scraper",
+    "description": "Scraper de metadatos de notificaciones del Buzón Tributario del SAT México",
+    "license": "MIT",
+    "type": "library",
+    "version": "0.0.1",
+    "authors": [
+        {
+            "name": "Rafael Acosta",
+            "email": "rafael@tecnofy.org"
+        }
+    ],
+    "homepage": "https://github.com/tecnofy/buzon-tributario-sat-scraper",
+    "support": {
+        "issues": "https://github.com/tecnofy/buzon-tributario-sat-scraper/issues",
+        "source": "https://github.com/tecnofy/buzon-tributario-sat-scraper"
+    },
+    "require": {
+        "php": ">=8.4",
+        "ext-curl": "*",
+        "guzzlehttp/guzzle": "^7.10",
+        "phpcfdi/image-captcha-resolver": "^0.3.0",
+        "symfony/css-selector": "^7.4 || ^8.0",
+        "symfony/dom-crawler": "^7.4 || ^8.0"
+    },
+    "require-dev": {
+        "ergebnis/composer-normalize": "^2.48",
+        "friendsofphp/php-cs-fixer": "^3.87",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5",
+        "squizlabs/php_codesniffer": "^3.13 || ^4.0"
+    },
+    "suggest": {
+        "phpcfdi/image-captcha-resolver-boxfactura-ai": "Permite resolver captchas mediante BoxFactura AI"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tecnofy\\BuzonTributarioSatScraper\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tecnofy\\BuzonTributarioSatScraper\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true,
+            "php-http/discovery": false
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "dev:build": [
+            "@dev:fix-style",
+            "@dev:test"
+        ],
+        "dev:check-style": [
+            "@composer normalize --dry-run",
+            "@php vendor/bin/php-cs-fixer fix --dry-run --verbose",
+            "@php vendor/bin/phpcs --colors -sp src/ tests/"
+        ],
+        "dev:coverage": "@php -dzend_extension=xdebug.so -dxdebug.mode=coverage vendor/bin/phpunit --coverage-html build/coverage/html/",
+        "dev:fix-style": [
+            "@composer normalize",
+            "@php vendor/bin/php-cs-fixer fix --verbose",
+            "@php vendor/bin/phpcbf --colors -sp src/ tests/"
+        ],
+        "dev:test": [
+            "@dev:check-style",
+            "@php vendor/bin/phpunit --stop-on-failure",
+            "@php vendor/bin/phpstan analyse --no-interaction --no-progress"
+        ],
+        "test": "@php vendor/bin/phpunit"
+    }
+}
