@@ -14,25 +14,22 @@ use PhpCfdi\ImageCaptchaResolver\CaptchaAnswerInterface;
 use PhpCfdi\ImageCaptchaResolver\CaptchaImageInterface;
 use PhpCfdi\ImageCaptchaResolver\CaptchaResolverInterface;
 use Psr\Http\Message\RequestInterface;
-use Tecnofy\BuzonTributarioSatScraper\Exceptions\NotificationStructureException;
 use Tecnofy\BuzonTributarioSatScraper\HttpClientFactory;
 use Tecnofy\BuzonTributarioSatScraper\Scraper;
 use Tecnofy\BuzonTributarioSatScraper\Tests\TestCase;
 
 final class ScraperTest extends TestCase
 {
-    public function testCompleteWorkflowLogsOutAndNeverOpensDocuments(): void
+    public function testCompleteWorkflowUsesDirectLoginAndOnlyCollectsCommunications(): void
     {
         /** @var ArrayObject<int, RequestInterface> $requests */
         $requests = new ArrayObject();
         $mock = new MockHandler([
-            new Response(200, ['Set-Cookie' => 'SATSESSID=sanitized; Path=/'], self::fixture('login-portal.html')),
-            new Response(200, [], self::fixture('login-form.html')),
+            new Response(200, ['Set-Cookie' => 'JSESSIONID=sanitized; Path=/'], '<html></html>'),
+            new Response(200, ['Set-Cookie' => 'SATSESSID=sanitized; Path=/'], self::fixture('login-form.html')),
             new Response(200, [], self::fixture('saml.html')),
-            new Response(200, [], self::fixture('buzon-home.html')),
-            new Response(200, [], self::fixture('notifications-pending.html')),
-            new Response(200, [], self::fixture('notifications-pending-page-2.html')),
-            new Response(200, [], self::fixture('notifications-notified.html')),
+            new Response(200, [], self::fixture('authenticated-home.html')),
+            new Response(200, [], self::fixture('communications.html')),
             new Response(200, [], '<html><body>Sesión cerrada</body></html>'),
             new Response(200, [], '<html><body>Sesión cerrada</body></html>'),
         ]);
@@ -50,52 +47,45 @@ final class ScraperTest extends TestCase
             }
         };
 
-        $result = Scraper::create($client, $resolver, 'AAA010101AAA', 'secret')->notifications();
+        $result = Scraper::create($client, $resolver, 'AAA010101AAA', 'secret')->unreadCommunications();
 
         self::assertCount(3, $result);
-        self::assertCount(9, $requests);
+        self::assertCount(7, $requests);
         $secondRequest = $requests[1];
         if (! $secondRequest instanceof RequestInterface) {
             self::fail('The second request was not recorded.');
         }
         self::assertTrue($secondRequest->hasHeader('Cookie'));
+        self::assertSame('POST', $secondRequest->getMethod());
+        self::assertSame('https://login.siat.sat.gob.mx/nidp/app/login', sprintf(
+            '%s://%s%s',
+            $secondRequest->getUri()->getScheme(),
+            $secondRequest->getUri()->getHost(),
+            $secondRequest->getUri()->getPath(),
+        ));
+        parse_str($secondRequest->getUri()->getQuery(), $loginQuery);
+        self::assertSame('ptsc-ciec', $loginQuery['id'] ?? null);
+        self::assertSame('1', $loginQuery['sid'] ?? null);
+        self::assertSame('credential', $loginQuery['option'] ?? null);
+
+        $loginRequest = $requests[2];
+        if (! $loginRequest instanceof RequestInterface) {
+            self::fail('The login request was not recorded.');
+        }
+        parse_str((string) $loginRequest->getBody(), $loginFields);
+        self::assertSame('AAA010101AAA', $loginFields['Ecom_User_ID'] ?? null);
+        self::assertSame('secret', $loginFields['Ecom_Password'] ?? null);
+        self::assertSame('ABCDE', $loginFields['userCaptcha'] ?? null);
+        self::assertSame('Enviar', $loginFields['submit'] ?? null);
+
         $requestedUris = [];
         foreach ($requests as $request) {
             $requestedUris[] = (string) $request->getUri();
         }
         $requestedUris = implode(' ', $requestedUris);
-        self::assertStringNotContainsString('/documento/', $requestedUris);
-        self::assertStringNotContainsString('/acuse/', $requestedUris);
+        self::assertStringContainsString('/iniciar-expediente/mis-comunicados/', $requestedUris);
+        self::assertStringNotContainsString('mis-notificaciones', $requestedUris);
         self::assertStringContainsString('/personas/cerrar-sesion', $requestedUris);
         self::assertStringContainsString('/nidp/app/logout', $requestedUris);
-    }
-
-    public function testOriginalCollectionFailureWinsOverLogoutFailure(): void
-    {
-        $invalidNotifications = <<<'HTML'
-            <html lang="es"><body><h1>Mis notificaciones</h1>
-            <table><caption>Pendientes</caption>
-            <tr><th>Folio</th><th>Autoridad</th><th>Acto administrativo</th><th>Fecha de aviso</th></tr>
-            <tr><td>ABC-ERROR</td><td>SAT</td><td>Acto</td><td>not-a-date</td></tr>
-            </table></body></html>
-            HTML;
-        $mock = new MockHandler([
-            new Response(200, [], self::fixture('login-portal.html')),
-            new Response(200, [], self::fixture('login-form.html')),
-            new Response(200, [], self::fixture('saml.html')),
-            new Response(200, [], self::fixture('buzon-home.html')),
-            new Response(200, [], $invalidNotifications),
-            new Response(500, [], 'logout unavailable'),
-        ]);
-        $client = HttpClientFactory::create(['handler' => HandlerStack::create($mock)]);
-        $resolver = new class implements CaptchaResolverInterface {
-            public function resolve(CaptchaImageInterface $image): CaptchaAnswerInterface
-            {
-                return new CaptchaAnswer('ABCDE');
-            }
-        };
-
-        $this->expectException(NotificationStructureException::class);
-        Scraper::create($client, $resolver, 'AAA010101AAA', 'secret')->notifications();
     }
 }

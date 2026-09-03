@@ -6,9 +6,9 @@ namespace Tecnofy\BuzonTributarioSatScraper;
 
 final class Url
 {
-    public const LOGIN_PAGE = 'https://wwwmat.sat.gob.mx/personas/iniciar-sesion';
+    public const LOGIN_APP = 'https://login.siat.sat.gob.mx/nidp/app';
 
-    public const BUZON_HOME = 'https://wwwmat.sat.gob.mx/buzon';
+    public const LOGIN_PAGE = 'https://login.siat.sat.gob.mx/nidp/app/login';
 
     public const COMMUNICATIONS = 'https://wwwmat.sat.gob.mx/iniciar-expediente/mis-comunicados/';
 

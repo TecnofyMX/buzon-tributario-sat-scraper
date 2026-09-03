@@ -36,7 +36,7 @@ final class CommunicationServiceTest extends TestCase
         );
 
         $communications = $service->collectUnread(new Page(
-            self::fixture('buzon-home.html'),
+            self::fixture('authenticated-home.html'),
             'https://wwwmat.sat.gob.mx/buzon',
         ));
 

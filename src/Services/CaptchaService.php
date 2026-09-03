@@ -19,9 +19,7 @@ final class CaptchaService
     public function resolve(Page $page): string
     {
         $crawler = new Crawler($page->html, $page->uri);
-        $images = $crawler->filter(
-            '#divCaptcha img, .divCaptcha img, img[id*="captcha"], img[src^="data:image"]',
-        );
+        $images = $crawler->filter('#divCaptcha img');
         if (0 === $images->count()) {
             throw new CaptchaSourceNotFoundException('The captcha image was not found in the SAT login page.');
         }

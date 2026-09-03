@@ -19,12 +19,12 @@ final class CommunicationService
     ) {
     }
 
-    public function collectUnread(Page $buzonPage): CommunicationCollection
+    public function collectUnread(Page $authenticatedPage): CommunicationCollection
     {
-        $page = $this->parser->recognizesCommunicationsPage($buzonPage)
-            ? $buzonPage
+        $page = $this->parser->recognizesCommunicationsPage($authenticatedPage)
+            ? $authenticatedPage
             : $this->requester->request('GET', Url::COMMUNICATIONS, [
-                RequestOptions::HEADERS => ['Referer' => $buzonPage->uri],
+                RequestOptions::HEADERS => ['Referer' => $authenticatedPage->uri],
             ]);
 
         if (! $this->parser->recognizesCommunicationsPage($page)) {

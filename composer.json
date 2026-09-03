@@ -1,6 +1,6 @@
 {
     "name": "tecnofy/buzon-tributario-sat-scraper",
-    "description": "Scraper de metadatos de notificaciones del Buzón Tributario del SAT México",
+    "description": "Scraper de comunicados no leídos del Buzón Tributario del SAT México",
     "license": "MIT",
     "type": "library",
     "version": "0.0.1",

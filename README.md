@@ -1,24 +1,19 @@
 # tecnofy/buzon-tributario-sat-scraper
 
-Librería PHP para recolectar los metadatos de **Mis notificaciones** y los mensajes no leídos de
-**Mis comunicados** del Buzón Tributario del SAT México.
+Librería PHP para recolectar los mensajes no leídos de **Mis comunicados** del Buzón Tributario
+del SAT México.
 
 > La documentación está en español porque es el idioma natural de las personas usuarias de esta herramienta.
 
 ## Alcance y seguridad
 
-La versión `0.x` inicia sesión con RFC, Contraseña y captcha, consulta las carpetas **Pendientes** y **Notificados**, recorre su paginación y devuelve únicamente:
+La versión `0.x` inicia sesión con RFC, Contraseña y captcha directamente en
+`https://login.siat.sat.gob.mx/nidp/app/login`. Después abre **Mis comunicados** y devuelve la
+fecha, hora y asunto de los mensajes que permanecen bajo **Mensajes no leídos**.
 
-- folio del acto administrativo;
-- autoridad emisora;
-- acto administrativo;
-- fecha de aviso;
-- estado (`pending` o `notified`).
-
-También consulta **Mis comunicados** sin expandir sus elementos y devuelve la fecha, hora y asunto de los mensajes
-que permanecen bajo **Mensajes no leídos**.
-
-La librería **no abre actos pendientes**, no envía e.firma, no genera acuses, no descarga documentos y no sigue enlaces de Documento, Ver, Aceptar o Acuse. Abrir un acto pendiente puede tener efectos jurídicos; esa operación está deliberadamente fuera del alcance.
+La librería no consulta **Mis notificaciones**, no expande comunicados, no envía e.firma, no
+genera acuses y no descarga documentos. Las notificaciones requieren ser atendidas dentro del
+Buzón Tributario y están deliberadamente fuera del alcance.
 
 ## Instalación
 
@@ -26,7 +21,8 @@ La librería **no abre actos pendientes**, no envía e.firma, no genera acuses, 
 composer require tecnofy/buzon-tributario-sat-scraper
 ```
 
-Requiere PHP 8.4 o posterior, cURL y un resolvedor compatible con [`tecnofy/image-captcha-resolver`](https://github.com/tecnofy/image-captcha-resolver).
+Requiere PHP 8.4 o posterior, cURL y un resolvedor compatible con
+[`phpcfdi/image-captcha-resolver`](https://github.com/phpcfdi/image-captcha-resolver).
 
 ## Uso básico
 
@@ -40,7 +36,7 @@ require 'vendor/autoload.php';
 use GuzzleHttp\RequestOptions;
 use Tecnofy\BuzonTributarioSatScraper\HttpClientFactory;
 use Tecnofy\BuzonTributarioSatScraper\Scraper;
-use tecnofy\ImageCaptchaResolver\Resolvers\ConsoleResolver;
+use PhpCfdi\ImageCaptchaResolver\Resolvers\ConsoleResolver;
 
 $client = HttpClientFactory::create([
     // Algunos entornos antiguos del SAT podrían necesitar esta opción:
@@ -56,24 +52,6 @@ $scraper = Scraper::create(
     'TU_CONTRASEÑA',
 );
 
-$notifications = $scraper->notifications();
-
-foreach ($notifications as $notification) {
-    printf(
-        "%s | %s | %s | %s\n",
-        $notification->status->value,
-        $notification->folio,
-        $notification->noticeDate,
-        $notification->administrativeAct,
-    );
-}
-```
-
-`NotificationCollection::pending()` y `NotificationCollection::notified()` crean colecciones filtradas sin modificar la original.
-
-Los comunicados no leídos se consultan en una sesión independiente:
-
-```php
 $communications = $scraper->unreadCommunications();
 
 foreach ($communications as $communication) {
@@ -83,7 +61,10 @@ foreach ($communications as $communication) {
 
 ## Errores
 
-Las fallas del SAT se expresan mediante excepciones específicas bajo `Tecnofy\BuzonTributarioSatScraper\Exceptions`: red, captcha, credenciales, SSO, página inesperada, paginación y estructura no reconocida. Los mensajes no incluyen RFC, contraseña, captcha, cookies ni HTML autenticado.
+Las fallas del SAT se expresan mediante excepciones específicas bajo
+`Tecnofy\BuzonTributarioSatScraper\Exceptions`: red, captcha, credenciales, SSO, página
+inesperada y estructura no reconocida. Los mensajes no incluyen RFC, contraseña, captcha,
+cookies ni HTML autenticado.
 
 ## Desarrollo
 
@@ -98,7 +79,7 @@ Las pruebas de integración reales son manuales y requieren que la persona propi
 
 ## Compatibilidad
 
-La rama inicial se prueba con PHP 8.2, 8.3, 8.4 y 8.5 y sigue Versionado Semántico.
+La rama inicial se prueba con PHP 8.4 y 8.5 y sigue Versionado Semántico.
 
 ## Licencia
 

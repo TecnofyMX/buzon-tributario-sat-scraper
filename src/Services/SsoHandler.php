@@ -15,16 +15,17 @@ final class SsoHandler
 {
     private const MAX_STEPS = 12;
 
-    public function __construct(
-        private HttpRequester $requester,
-        private FormParser $formParser,
-    ) {
+    private FormParser $formParser;
+
+    public function __construct(private HttpRequester $requester)
+    {
+        $this->formParser = new FormParser();
     }
 
     public function handle(Page $page): Page
     {
         for ($step = 0; $step < self::MAX_STEPS; ++$step) {
-            if ($this->isBuzonPage($page)) {
+            if ($this->isAuthenticatedSatellitePage($page)) {
                 return $page;
             }
 
@@ -45,17 +46,17 @@ final class SsoHandler
                 continue;
             }
 
-            throw new SsoException('The SAT SSO response does not contain a safe continuation.');
+            return $page;
         }
 
         throw new SsoException('The SAT SSO flow exceeded the safe redirect limit.');
     }
 
-    private function isBuzonPage(Page $page): bool
+    private function isAuthenticatedSatellitePage(Page $page): bool
     {
         $normalized = $this->normalize(strip_tags($page->html));
 
-        return str_contains($normalized, 'mis notificaciones')
+        return str_contains($normalized, 'mis comunicados')
             || str_contains($normalized, 'mis expedientes')
             || (str_contains($page->uri, '/buzon') && ! str_contains($normalized, 'iniciar sesion'));
     }
@@ -81,7 +82,7 @@ final class SsoHandler
             }
         }
 
-        $links = $crawler->filter('a[href*="/buzon"], a[href*="mis-notificaciones"]');
+        $links = $crawler->filter('a[href*="/buzon"], a[href*="mis-comunicados"]');
         if (0 < $links->count()) {
             $href = $links->first()->attr('href');
             if (null !== $href && ! str_starts_with($href, 'javascript:')) {

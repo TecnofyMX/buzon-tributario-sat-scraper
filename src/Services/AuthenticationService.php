@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace Tecnofy\BuzonTributarioSatScraper\Services;
 
 use GuzzleHttp\RequestOptions;
-use Symfony\Component\DomCrawler\Crawler;
 use Tecnofy\BuzonTributarioSatScraper\Exceptions\InvalidCaptchaException;
 use Tecnofy\BuzonTributarioSatScraper\Exceptions\InvalidCredentialsException;
 use Tecnofy\BuzonTributarioSatScraper\Exceptions\LoginPageNotLoadedException;
-use Tecnofy\BuzonTributarioSatScraper\Internal\FormParser;
 use Tecnofy\BuzonTributarioSatScraper\Internal\HttpRequester;
 use Tecnofy\BuzonTributarioSatScraper\Internal\Page;
 use Tecnofy\BuzonTributarioSatScraper\Url;
@@ -18,7 +16,6 @@ final class AuthenticationService
 {
     public function __construct(
         private HttpRequester $requester,
-        private FormParser $formParser,
         private CaptchaService $captchaService,
         private string $rfc,
         private string $password,
@@ -27,24 +24,23 @@ final class AuthenticationService
 
     public function login(): Page
     {
-        $portal = $this->requester->request('GET', Url::LOGIN_PAGE);
-        $loginPage = $this->loadLoginFrame($portal);
-        $form = $this->formParser->extract($loginPage, ['form#IDPLogin', 'form']);
+        $this->requester->request('GET', Url::LOGIN_APP, [
+            RequestOptions::QUERY => ['sid' => 1],
+        ]);
+        $loginPage = $this->requester->request('POST', Url::LOGIN_PAGE, $this->loginRequestOptions());
+        if (! str_contains($loginPage->html, 'divCaptcha')) {
+            throw new LoginPageNotLoadedException('The SAT login page does not contain the captcha form.');
+        }
+
         $captcha = $this->captchaService->resolve($loginPage);
-        $fields = array_replace($form->fields, [
+        $options = $this->loginRequestOptions();
+        $options[RequestOptions::FORM_PARAMS] = [
             'Ecom_User_ID' => $this->rfc,
             'Ecom_Password' => $this->password,
             'userCaptcha' => $captcha,
             'submit' => 'Enviar',
-        ]);
-
-        $result = $this->requester->request($form->method, $form->action, [
-            RequestOptions::FORM_PARAMS => $fields,
-            RequestOptions::HEADERS => [
-                'Origin' => $this->origin($form->action),
-                'Referer' => $loginPage->uri,
-            ],
-        ]);
+        ];
+        $result = $this->requester->request('POST', Url::LOGIN_PAGE, $options);
         $this->checkResult($result);
 
         return $result;
@@ -56,20 +52,21 @@ final class AuthenticationService
         $this->requester->request('GET', Url::LOGOUT_IDP);
     }
 
-    private function loadLoginFrame(Page $portal): Page
+    /** @return array<string, mixed> */
+    private function loginRequestOptions(): array
     {
-        $crawler = new Crawler($portal->html, $portal->uri);
-        $frames = $crawler->filter('iframe#iframetoload, iframe[src*="lanzador"], iframe[src*="login"]');
-        if (0 === $frames->count()) {
-            throw new LoginPageNotLoadedException('The SAT login iframe was not found.');
-        }
-
-        $source = $frames->first()->attr('src');
-        if (null === $source || '' === trim($source)) {
-            throw new LoginPageNotLoadedException('The SAT login iframe has no source.');
-        }
-
-        return $this->requester->request('GET', $this->formParser->resolve($portal->uri, $source));
+        return [
+            RequestOptions::QUERY => [
+                'id' => 'ptsc-ciec',
+                'sid' => 1,
+                'option' => 'credential',
+            ],
+            RequestOptions::HEADERS => [
+                'Content-Type' => 'application/x-www-form-urlencoded',
+                'Origin' => 'https://login.siat.sat.gob.mx',
+                'Referer' => Url::LOGIN_PAGE,
+            ],
+        ];
     }
 
     private function checkResult(Page $page): void
@@ -90,13 +87,6 @@ final class AuthenticationService
         if (str_contains($page->html, 'name="userCaptcha"') && ! str_contains($page->html, 'SAMLResponse')) {
             throw new InvalidCaptchaException('The SAT returned the login form again.');
         }
-    }
-
-    private function origin(string $uri): string
-    {
-        $parts = parse_url($uri);
-
-        return sprintf('%s://%s', $parts['scheme'] ?? 'https', $parts['host'] ?? 'login.siat.sat.gob.mx');
     }
 
     private function normalize(string $value): string
