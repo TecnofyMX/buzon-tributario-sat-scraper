@@ -7,10 +7,11 @@ namespace Tecnofy\BuzonTributarioSatScraper;
 use ArrayIterator;
 use Countable;
 use IteratorAggregate;
+use JsonSerializable;
 use Traversable;
 
 /** @implements IteratorAggregate<int, Communication> */
-final class CommunicationCollection implements Countable, IteratorAggregate
+final class CommunicationCollection implements Countable, IteratorAggregate, JsonSerializable
 {
     /** @var list<Communication> */
     private array $items;
@@ -35,5 +36,11 @@ final class CommunicationCollection implements Countable, IteratorAggregate
     public function all(): array
     {
         return $this->items;
+    }
+
+    /** @return list<Communication> */
+    public function jsonSerialize(): array
+    {
+        return $this->all();
     }
 }

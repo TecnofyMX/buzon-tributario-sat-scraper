@@ -29,6 +29,7 @@ final class ScraperTest extends TestCase
             new Response(200, ['Set-Cookie' => 'SATSESSID=sanitized; Path=/'], self::fixture('login-form.html')),
             new Response(200, [], self::fixture('saml.html')),
             new Response(200, [], self::fixture('authenticated-home.html')),
+            new Response(200, [], self::fixture('communications-wrapper.html')),
             new Response(200, [], self::fixture('communications.html')),
             new Response(200, [], '<html><body>Sesión cerrada</body></html>'),
             new Response(200, [], '<html><body>Sesión cerrada</body></html>'),
@@ -50,7 +51,7 @@ final class ScraperTest extends TestCase
         $result = Scraper::create($client, $resolver, 'AAA010101AAA', 'secret')->unreadCommunications();
 
         self::assertCount(3, $result);
-        self::assertCount(7, $requests);
+        self::assertCount(8, $requests);
         $secondRequest = $requests[1];
         if (! $secondRequest instanceof RequestInterface) {
             self::fail('The second request was not recorded.');
