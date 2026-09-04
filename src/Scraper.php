@@ -46,22 +46,16 @@ final class Scraper implements ScraperInterface
 
     public function unreadCommunications(): CommunicationCollection
     {
-        $failure = null;
         try {
             $authenticatedPage = $this->authenticationService->login();
             $authenticatedPage = $this->ssoHandler->handle($authenticatedPage);
 
             return $this->communicationService->collectUnread($authenticatedPage);
-        } catch (Throwable $exception) {
-            $failure = $exception;
-            throw $exception;
         } finally {
             try {
                 $this->authenticationService->logout();
-            } catch (Throwable $logoutFailure) {
-                if (null === $failure) {
-                    throw $logoutFailure;
-                }
+            } catch (Throwable) {
+                // Logout is best-effort cleanup and must not replace the scraping result or its failure.
             }
         }
     }

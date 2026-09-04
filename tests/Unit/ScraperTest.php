@@ -31,8 +31,9 @@ final class ScraperTest extends TestCase
             new Response(200, [], self::fixture('authenticated-home.html')),
             new Response(200, [], self::fixture('communications-wrapper.html')),
             new Response(200, [], self::fixture('communications.html')),
-            new Response(200, [], '<html><body>Sesión cerrada</body></html>'),
-            new Response(200, [], '<html><body>Sesión cerrada</body></html>'),
+            new Response(404, [], '<html><body>Ruta de salida no disponible</body></html>'),
+            new Response(404, [], '<html><body>Ruta de salida no disponible</body></html>'),
+            new Response(404, [], '<html><body>Ruta de salida no disponible</body></html>'),
         ]);
         $stack = HandlerStack::create($mock);
         $stack->push(Middleware::tap(
@@ -51,7 +52,7 @@ final class ScraperTest extends TestCase
         $result = Scraper::create($client, $resolver, 'AAA010101AAA', 'secret')->unreadCommunications();
 
         self::assertCount(3, $result);
-        self::assertCount(8, $requests);
+        self::assertCount(9, $requests);
         $secondRequest = $requests[1];
         if (! $secondRequest instanceof RequestInterface) {
             self::fail('The second request was not recorded.');
@@ -86,7 +87,8 @@ final class ScraperTest extends TestCase
         $requestedUris = implode(' ', $requestedUris);
         self::assertStringContainsString('/iniciar-expediente/mis-comunicados/', $requestedUris);
         self::assertStringNotContainsString('mis-notificaciones', $requestedUris);
-        self::assertStringContainsString('/personas/cerrar-sesion', $requestedUris);
-        self::assertStringContainsString('/nidp/app/logout', $requestedUris);
+        self::assertStringContainsString('Common/Logic/COMMON_Logout', $requestedUris);
+        self::assertStringContainsString('/app/seg/cerrarSesion', $requestedUris);
+        self::assertStringContainsString('/nidp/app/plogout', $requestedUris);
     }
 }

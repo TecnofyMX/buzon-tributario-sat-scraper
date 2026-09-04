@@ -11,6 +11,7 @@ use Tecnofy\BuzonTributarioSatScraper\Exceptions\LoginPageNotLoadedException;
 use Tecnofy\BuzonTributarioSatScraper\Internal\HttpRequester;
 use Tecnofy\BuzonTributarioSatScraper\Internal\Page;
 use Tecnofy\BuzonTributarioSatScraper\Url;
+use Throwable;
 
 final class AuthenticationService
 {
@@ -48,8 +49,18 @@ final class AuthenticationService
 
     public function logout(): void
     {
-        $this->requester->request('GET', Url::LOGOUT_SATELLITE);
-        $this->requester->request('GET', Url::LOGOUT_IDP);
+        $failure = null;
+        foreach ([Url::LOGOUT_SATELLITE, Url::CLOSE_SESSION, Url::LOGOUT_IDP] as $uri) {
+            try {
+                $this->requester->request('GET', $uri, [RequestOptions::HTTP_ERRORS => false]);
+            } catch (Throwable $exception) {
+                $failure ??= $exception;
+            }
+        }
+
+        if (null !== $failure) {
+            throw $failure;
+        }
     }
 
     /** @return array<string, mixed> */
