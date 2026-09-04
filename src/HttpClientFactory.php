@@ -59,7 +59,7 @@ final class HttpClientFactory
         return [
             RequestOptions::COOKIES => new CookieJar(),
             RequestOptions::CONNECT_TIMEOUT => 20,
-            RequestOptions::TIMEOUT => 60,
+            RequestOptions::TIMEOUT => 120,
             RequestOptions::VERIFY => true,
             RequestOptions::HEADERS => [
                 'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',

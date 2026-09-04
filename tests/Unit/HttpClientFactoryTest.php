@@ -17,6 +17,7 @@ final class HttpClientFactoryTest extends TestCase
         $options = (new HttpClientFactory())->buildOptions();
 
         self::assertInstanceOf(CookieJarInterface::class, $options[RequestOptions::COOKIES]);
+        self::assertSame(120, $options[RequestOptions::TIMEOUT]);
         self::assertTrue($options[RequestOptions::VERIFY]);
     }
 
