@@ -30,6 +30,7 @@ final class Scraper implements ScraperInterface
         string $password,
     ): self {
         $requester = new HttpRequester($client);
+        $ssoHandler = new SsoHandler($requester);
 
         return new self(
             new AuthenticationService(
@@ -38,8 +39,8 @@ final class Scraper implements ScraperInterface
                 $rfc,
                 $password,
             ),
-            new SsoHandler($requester),
-            new CommunicationService($requester, new CommunicationParser()),
+            $ssoHandler,
+            new CommunicationService($requester, new CommunicationParser(), $ssoHandler),
         );
     }
 

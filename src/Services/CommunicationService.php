@@ -18,11 +18,15 @@ final class CommunicationService
 {
     private FormParser $formParser;
 
+    private SsoHandler $ssoHandler;
+
     public function __construct(
         private HttpRequester $requester,
         private CommunicationParser $parser,
+        ?SsoHandler $ssoHandler = null,
     ) {
         $this->formParser = new FormParser();
+        $this->ssoHandler = $ssoHandler ?? new SsoHandler($requester);
     }
 
     public function collectUnread(Page $authenticatedPage): CommunicationCollection
@@ -42,6 +46,7 @@ final class CommunicationService
                 $page = $this->requester->request('GET', $frameUri ?? Url::COMMUNICATIONS_FRAME, [
                     RequestOptions::HEADERS => ['Referer' => $referer],
                 ]);
+                $page = $this->ssoHandler->handle($page);
             }
         }
 
@@ -109,7 +114,7 @@ final class CommunicationService
         ) {
             return 'the SAT returned a login page';
         }
-        if (str_contains($page->html, 'SAMLResponse')) {
+        if (str_contains($page->html, 'SAMLResponse') || str_contains($page->html, 'SAMLRequest')) {
             return 'the SAT returned an unfinished SSO response';
         }
         if (

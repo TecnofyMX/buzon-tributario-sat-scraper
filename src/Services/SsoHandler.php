@@ -29,7 +29,7 @@ final class SsoHandler
                 return $page;
             }
 
-            if (str_contains($page->html, 'SAMLResponse')) {
+            if (str_contains($page->html, 'SAMLResponse') || str_contains($page->html, 'SAMLRequest')) {
                 $form = $this->formParser->extract($page, ['form']);
                 $page = $this->requester->request($form->method, $form->action, [
                     RequestOptions::FORM_PARAMS => $form->fields,

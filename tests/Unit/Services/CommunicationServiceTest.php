@@ -194,4 +194,58 @@ final class CommunicationServiceTest extends TestCase
             );
         }
     }
+
+    public function testCompletesSecondarySsoBeforeParsingCommunicationsIframe(): void
+    {
+        /** @var ArrayObject<int, RequestInterface> $requests */
+        $requests = new ArrayObject();
+        $mock = new MockHandler([
+            new Response(200, [], self::fixture('saml-request.html')),
+            new Response(200, [], self::fixture('saml-response-secondary.html')),
+            new Response(200, [], self::fixture('communications.html')),
+        ]);
+        $stack = HandlerStack::create($mock);
+        $stack->push(Middleware::tap(
+            static function (RequestInterface $request) use ($requests): void {
+                $requests[] = $request;
+            },
+        ));
+        $service = new CommunicationService(
+            new HttpRequester(new Client(['handler' => $stack])),
+            new CommunicationParser(),
+        );
+
+        $communications = $service->collectUnread(new Page(
+            self::fixture('communications-wrapper.html'),
+            'https://wwwmat.sat.gob.mx/iniciar-expediente/mis-comunicados/',
+        ));
+
+        self::assertCount(3, $communications);
+        self::assertCount(3, $requests);
+        $frameRequest = $requests[0];
+        $samlRequest = $requests[1];
+        $samlResponse = $requests[2];
+        if (
+            ! $frameRequest instanceof RequestInterface
+            || ! $samlRequest instanceof RequestInterface
+            || ! $samlResponse instanceof RequestInterface
+        ) {
+            self::fail('The secondary SSO requests were not recorded.');
+        }
+        self::assertSame('GET', $frameRequest->getMethod());
+        self::assertSame('POST', $samlRequest->getMethod());
+        self::assertSame('POST', $samlResponse->getMethod());
+        self::assertSame(
+            'https://login.siat.sat.gob.mx/nidp/saml2/sso',
+            (string) $samlRequest->getUri(),
+        );
+        self::assertSame(
+            'https://loginc.mat.sat.gob.mx/nidp/saml2/sso',
+            (string) $samlResponse->getUri(),
+        );
+        parse_str((string) $samlRequest->getBody(), $requestFields);
+        self::assertSame('SANITIZED_REQUEST', $requestFields['SAMLRequest'] ?? null);
+        parse_str((string) $samlResponse->getBody(), $responseFields);
+        self::assertSame('SANITIZED_RESPONSE', $responseFields['SAMLResponse'] ?? null);
+    }
 }
