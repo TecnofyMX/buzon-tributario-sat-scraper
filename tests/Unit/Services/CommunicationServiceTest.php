@@ -11,6 +11,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\RequestInterface;
+use Tecnofy\BuzonTributarioSatScraper\Exceptions\UnexpectedPageException;
 use Tecnofy\BuzonTributarioSatScraper\Internal\HttpRequester;
 use Tecnofy\BuzonTributarioSatScraper\Internal\Page;
 use Tecnofy\BuzonTributarioSatScraper\Services\CommunicationParser;
@@ -132,5 +133,65 @@ final class CommunicationServiceTest extends TestCase
             'https://wwwmat.sat.gob.mx/iniciar-expediente/mis-comunicados/',
             $frameRequest->getHeaderLine('Referer'),
         );
+    }
+
+    public function testUsesKnownFrameAsFallbackWhenWrapperDoesNotExposeIframe(): void
+    {
+        /** @var ArrayObject<int, RequestInterface> $requests */
+        $requests = new ArrayObject();
+        $mock = new MockHandler([
+            new Response(200, [], '<html><body>&gt; Mis comunicados</body></html>'),
+            new Response(200, [], self::fixture('communications.html')),
+        ]);
+        $stack = HandlerStack::create($mock);
+        $stack->push(Middleware::tap(
+            static function (RequestInterface $request) use ($requests): void {
+                $requests[] = $request;
+            },
+        ));
+        $service = new CommunicationService(
+            new HttpRequester(new Client(['handler' => $stack])),
+            new CommunicationParser(),
+        );
+
+        $communications = $service->collectUnread(new Page(
+            self::fixture('authenticated-home.html'),
+            'https://wwwmat.sat.gob.mx/buzon',
+        ));
+
+        self::assertCount(3, $communications);
+        self::assertCount(2, $requests);
+        $frameRequest = $requests[1];
+        if (! $frameRequest instanceof RequestInterface) {
+            self::fail('The frame request was not recorded.');
+        }
+        self::assertSame(
+            'https://aplicacionesc.mat.sat.gob.mx/WebComunicados/Comunicados.aspx',
+            (string) $frameRequest->getUri(),
+        );
+    }
+
+    public function testUnexpectedFrameResponseReportsSafePageClassification(): void
+    {
+        $mock = new MockHandler([new Response(200, [], '<form><input name="userCaptcha"></form>')]);
+        $service = new CommunicationService(
+            new HttpRequester(new Client(['handler' => HandlerStack::create($mock)])),
+            new CommunicationParser(),
+        );
+
+        try {
+            $service->collectUnread(new Page(
+                self::fixture('communications-wrapper.html'),
+                'https://wwwmat.sat.gob.mx/iniciar-expediente/mis-comunicados/',
+            ));
+            self::fail('The request should have failed.');
+        } catch (UnexpectedPageException $exception) {
+            self::assertSame(
+                'The SAT communications iframe response at '
+                    . 'https://aplicacionesc.mat.sat.gob.mx/WebComunicados/Comunicados.aspx '
+                    . 'does not contain the expected headings (the SAT returned a login page).',
+                $exception->getMessage(),
+            );
+        }
     }
 }

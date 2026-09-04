@@ -37,16 +37,20 @@ final class CommunicationService
                 $frameUri = $this->findCommunicationsFrameUri($page);
             }
 
-            if (null !== $frameUri && ! $this->parser->recognizesCommunicationsPage($page)) {
+            if (! $this->parser->recognizesCommunicationsPage($page)) {
                 $referer = $page->uri;
-                $page = $this->requester->request('GET', $frameUri, [
+                $page = $this->requester->request('GET', $frameUri ?? Url::COMMUNICATIONS_FRAME, [
                     RequestOptions::HEADERS => ['Referer' => $referer],
                 ]);
             }
         }
 
         if (! $this->parser->recognizesCommunicationsPage($page)) {
-            throw new UnexpectedPageException('The SAT response does not contain Mis comunicados.');
+            throw new UnexpectedPageException(sprintf(
+                'The SAT communications iframe response at %s does not contain the expected headings (%s).',
+                $this->withoutSensitiveComponents($page->uri),
+                $this->classifyUnexpectedPage($page),
+            ));
         }
 
         return new CommunicationCollection(...$this->parser->parseUnread($page));
@@ -85,5 +89,38 @@ final class CommunicationService
 
         return 'https' === strtolower($parsed->getScheme())
             && ('sat.gob.mx' === $host || str_ends_with($host, '.sat.gob.mx'));
+    }
+
+    private function withoutSensitiveComponents(string $uri): string
+    {
+        return (string) (new Uri($uri))
+            ->withUserInfo('')
+            ->withQuery('')
+            ->withFragment('');
+    }
+
+    private function classifyUnexpectedPage(Page $page): string
+    {
+        $content = strtolower(html_entity_decode(strip_tags($page->html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if (
+            str_contains($content, 'iniciar sesión')
+            || str_contains($content, 'iniciar sesion')
+            || str_contains($page->html, 'name="userCaptcha"')
+        ) {
+            return 'the SAT returned a login page';
+        }
+        if (str_contains($page->html, 'SAMLResponse')) {
+            return 'the SAT returned an unfinished SSO response';
+        }
+        if (
+            str_contains($content, 'servicio no disponible')
+            || str_contains($content, 'mantenimiento')
+            || str_contains($content, 'ocurrió un error')
+            || str_contains($content, 'ocurrio un error')
+        ) {
+            return 'the SAT returned an error or maintenance page';
+        }
+
+        return 'the SAT returned an unrecognized page';
     }
 }

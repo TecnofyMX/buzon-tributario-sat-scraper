@@ -12,6 +12,8 @@ final class Url
 
     public const COMMUNICATIONS = 'https://wwwmat.sat.gob.mx/iniciar-expediente/mis-comunicados/';
 
+    public const COMMUNICATIONS_FRAME = 'https://aplicacionesc.mat.sat.gob.mx/WebComunicados/Comunicados.aspx';
+
     public const LOGOUT_SATELLITE = 'https://wwwmat.sat.gob.mx/personas/cerrar-sesion';
 
     public const LOGOUT_IDP = 'https://login.siat.sat.gob.mx/nidp/app/logout';

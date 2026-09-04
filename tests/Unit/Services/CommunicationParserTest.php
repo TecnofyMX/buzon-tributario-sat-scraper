@@ -66,4 +66,15 @@ final class CommunicationParserTest extends TestCase
             $decoded[0]['subject'],
         );
     }
+
+    public function testRecognizesHtmlEntitiesInCommunicationsHeadings(): void
+    {
+        $parser = new CommunicationParser();
+        $page = new Page(
+            '<h1>Mis comunicados</h1><h2>Mensajes no le&iacute;dos</h2><h2>Mensajes le&iacute;dos</h2>',
+            'https://aplicacionesc.mat.sat.gob.mx/WebComunicados/Comunicados.aspx',
+        );
+
+        self::assertTrue($parser->recognizesCommunicationsPage($page));
+    }
 }
