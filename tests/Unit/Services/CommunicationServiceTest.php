@@ -202,6 +202,7 @@ final class CommunicationServiceTest extends TestCase
         $mock = new MockHandler([
             new Response(200, [], self::fixture('saml-request.html')),
             new Response(200, [], self::fixture('saml-response-secondary.html')),
+            new Response(200, [], self::fixture('saml-consumer.html')),
             new Response(200, [], self::fixture('communications.html')),
         ]);
         $stack = HandlerStack::create($mock);
@@ -221,20 +222,23 @@ final class CommunicationServiceTest extends TestCase
         ));
 
         self::assertCount(3, $communications);
-        self::assertCount(3, $requests);
+        self::assertCount(4, $requests);
         $frameRequest = $requests[0];
         $samlRequest = $requests[1];
         $samlResponse = $requests[2];
+        $consumerRequest = $requests[3];
         if (
             ! $frameRequest instanceof RequestInterface
             || ! $samlRequest instanceof RequestInterface
             || ! $samlResponse instanceof RequestInterface
+            || ! $consumerRequest instanceof RequestInterface
         ) {
             self::fail('The secondary SSO requests were not recorded.');
         }
         self::assertSame('GET', $frameRequest->getMethod());
         self::assertSame('POST', $samlRequest->getMethod());
         self::assertSame('POST', $samlResponse->getMethod());
+        self::assertSame('POST', $consumerRequest->getMethod());
         self::assertSame(
             'https://login.siat.sat.gob.mx/nidp/saml2/sso',
             (string) $samlRequest->getUri(),
@@ -247,5 +251,7 @@ final class CommunicationServiceTest extends TestCase
         self::assertSame('SANITIZED_REQUEST', $requestFields['SAMLRequest'] ?? null);
         parse_str((string) $samlResponse->getBody(), $responseFields);
         self::assertSame('SANITIZED_RESPONSE', $responseFields['SAMLResponse'] ?? null);
+        parse_str((string) $consumerRequest->getBody(), $consumerFields);
+        self::assertSame('SANITIZED_TARGET', $consumerFields['target'] ?? null);
     }
 }
